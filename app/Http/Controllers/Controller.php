@@ -32,8 +32,8 @@ class Controller extends BaseController
 
         // $client_id = env('CLIENT_ID', '1');
         // $client_secret = env('CLIENT_SECRET', 'M6eUvovO28Cn2ZbqT3RBLZY8uP7hpHnPtgTY0ASS');
-        $client_id = '15';
-        $client_secret = 'QritycYY3L9RMfh8dANWM7PJGPz3BxzOGOWqamNq';
+        $client_id = '99b1beaf-1fb8-4077-b533-06992472852b';//'15';
+        $client_secret = 'lUeviYKNH9XblnJDYSnFQwPFJy0NV2WKlcqYGM2E';//'QritycYY3L9RMfh8dANWM7PJGPz3BxzOGOWqamNq';
 
         $data = [
             'grant_type' => 'client_credentials',

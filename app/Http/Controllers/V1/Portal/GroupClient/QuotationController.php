@@ -17,7 +17,7 @@ class QuotationController extends Controller
         $validator = Validator::make($request->all(), [
             'is_random_client' => 'nullable|boolean',
             //'broker_id' => 'nullable',
-            'Quotation_name' => 'required',
+            'Quotation_name' => 'nullable',
             'product_name' => 'required',
             'total_members' => 'nullable',
             'total_salary' => 'nullable',
@@ -32,8 +32,8 @@ class QuotationController extends Controller
             'unit_rate' => 'nullable', //unit_rate
             'FreeCoverLimit' => 'nullable', //FreeCoverLimit
             'portal_user_id' => 'nullable', // user making the request
-            'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
             'cover_period' => 'nullable',
             'client_type' => 'nullable',
             'client_address' => 'nullable',
@@ -100,6 +100,9 @@ class QuotationController extends Controller
             $quotation_date = date('Y-m-d H:i:s');
             $email = $request->email ?? null;
             $mobile_number = $request->mobile_number ?? null;
+
+            $Avg_Age = $request->Avg_Age ?? null;
+            $PackageId = $request->PackageId ?? null;
 
             // insert to QuotationRequest table and get the id
 
@@ -193,7 +196,22 @@ class QuotationController extends Controller
                 'created_on' => date('Y-m-d H:i:s'),
                 'created_by' => 'API',
                 'Status' => $status->Id,
+
+                'Avg_Age' => $Avg_Age,
+                'PackageId' => $PackageId,
+                'IsDetailedQuote' => 1
             ]);
+
+            //TODO - Insert into TravelMembers if travel
+            //$IsTravelProduct = $status = $this->britam_db->table('glifeclass')->where('IsTravelInsurance', 1)->first();
+            if($ins_product == "11" || $ins_product == 11){
+                //$riders = $request->riders ?? [];
+                $traveler = $request->traveler;
+                for ($i = 0; $i < sizeof($traveler); $i++) {
+                    $traveler[$i]['QuotationRequestId'] = $request_id;
+                    $this->britam_db->table('QuotReqTravelMembers')->insertGetId($traveler[$i]);
+                }
+            }
 
             // insert to QuotationRequestRiders table
 

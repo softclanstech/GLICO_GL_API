@@ -69,7 +69,7 @@ class AuthController2 extends Controller
                     ->join('contactpersoninfo AS c', 'c.id', '=', 'p.ContactPerson')
                     ->where('c.ContactEmail', $email)
                     ->where('p.IsClientContactPerson', 1)
-                    ->select('p.*', 'c.Client', 'c.Intermediary')
+                    ->select('p.*', 'c.Client', 'c.Intermediary', 'c.PopFundAccessLevelId')
                     ->first();
             } else {
 
@@ -77,7 +77,7 @@ class AuthController2 extends Controller
                     ->join('contactpersoninfo AS c', 'c.id', '=', 'p.ContactPerson')
                     ->where('c.ContactEmail', $email)
                     ->where('p.IsBroker', 1)
-                    ->select('p.*', 'c.Client', 'c.Intermediary')
+                    ->select('p.*', 'c.Client', 'c.Intermediary', 'c.PopFundAccessLevelId')
                     ->first();
             }
 

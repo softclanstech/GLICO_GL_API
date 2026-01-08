@@ -228,10 +228,44 @@ class DefaultParamsController extends Controller
         }
     }
 
+    //TODO create the - glife_plan_rider_config
+    public function getPlanRiderConfig()
+    {
+        try {
+            $results = $this->britam_db->table("glife_plan_rider_config as t1")
+            ->join('gliferider_info as t2', 't1.rider_code', '=', 't2.rider_code')
+            ->select("t1.*", "t2.description as rider_name")
+            ->get();
+
+            if ($results != null) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product Riders fetched successfully',
+                    'data' => $results
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No product Riders found',
+                ], 404);
+            }
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product classes' . $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function getProductClasses()
     {
         try {
-            $results = $this->britam_db->table("glifeclass")->select("class_code", "short_desc", "Description")->where("IsActive", 1)->get();
+            $results = $this->britam_db->table("glifeclass")->
+            select("class_code", "short_desc", "Description","IsGroupLifeCover","IsCreditLifeCover",
+            "pen","IsTravelInsurance","IsWelfare","IsActive","PortalDescription","IsForPartnerShip",
+            "ShowInPortal")->where("IsActive", 1)->get();
 
             if ($results != null) {
                 return response()->json([
@@ -243,6 +277,64 @@ class DefaultParamsController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'No product classes found',
+                ], 404);
+            }
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product classes' . $th->getMessage()
+            ], 500);
+        }
+    }
+    //Get LoanTypes for GroupLife
+    public function getGlLoanTypes()
+    {
+        try {
+            $results = $this->britam_db->table("GlifeLoanTypesinfo")->
+            select("*")->get();
+
+            if ($results != null) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Loan Types fetched successfully',
+                    'data' => $results
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No Loan Types found',
+                ], 404);
+            }
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product classes' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+
+    //Get Packages for Partnerships
+    public function getProductPackages()
+    {
+        try {
+            $results = $this->britam_db->table("GroupClassPackages")->
+            select("*")->where("ShowInPortal", 1)->get();
+
+            if ($results != null) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Packages fetched successfully',
+                    'data' => $results
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No Packages found',
                 ], 404);
             }
 

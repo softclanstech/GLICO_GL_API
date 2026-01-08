@@ -84,7 +84,6 @@ class GroupClientController extends Controller
                     'data' => []
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -229,8 +228,6 @@ class GroupClientController extends Controller
                     'message' => 'Error creating group client'
                 ], 500);
             }
-
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -339,7 +336,6 @@ class GroupClientController extends Controller
                     'message' => 'Error updating group client'
                 ], 500);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -464,14 +460,12 @@ class GroupClientController extends Controller
                         $this->addSchemeToClientSchemesAccess($clientScheme, $portal_user_id);
                     }
                 }
-
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Contact persons created successfully'
             ], 201);
-
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
@@ -479,6 +473,7 @@ class GroupClientController extends Controller
             ], 500);
         }
     }
+    //get 
 
     // get policies that the contact person has access to
     public function getGCContactPersonSchemes(Request $request)
@@ -497,25 +492,126 @@ class GroupClientController extends Controller
 
         try {
             $contact_person_id = $request->input('contact_person_id');
+            $is_pop_fund = $request->input('is_pop_fund');
 
             // get PortalUsageLoginInfo id from contact_person_id
             $user_id = $contact_person_id;
+            $currentDate = date('Y-m-d');
 
-            $schemes = $this->britam_db->table('polschemeinfo AS p')
+            if (isset($is_pop_fund) && ($is_pop_fund == "1" || $is_pop_fund == 1)) {
+                /*$schemes = $this->britam_db->table('polschemeinfo AS p')
                 ->join('ClientSchemesAccess AS c', 'p.schemeID', '=', 'c.Scheme')
                 ->join('glifeclass AS gc', 'p.class_code', '=', 'gc.class_code')
                 ->select('p.*', \DB::raw("CASE 
                                     WHEN p.SchemeDescription IS NOT NULL THEN CONCAT(p.policy_no, ' - ', p.SchemeDescription)
                                     WHEN p.CompanyName IS NOT NULL THEN CONCAT(p.policy_no, ' - ', p.CompanyName)
                                     ELSE p.policy_no
-                                END AS PolicyCompany"), 'gc.Description AS ProductDescription', 'gc.IsGroupLifeCover', 'gc.IsCreditLifeCover' )// ,'gc.IsLastExpense')
-                ->where('c.PortalUser', $user_id)
+                                END AS PolicyCompany"), 'gc.Description AS ProductDescription', 'gc.IsGroupLifeCover', 'gc.IsCreditLifeCover', 'gc.pen', 'gc.IsPopFund' )// ,'gc.IsLastExpense')
+                ->where('p.class_code', 8)
                 ->where(function ($query) {
                     $query->where('p.StatusCode', '001')
                         ->orWhere('p.StatusCode', '005');
                 })
                 ->where('c.AllowAccess', 1)
-                ->get();
+                ->get();*/
+                $schemes = $this->britam_db->table('polschemeinfo AS p')
+                    //->join('ClientSchemesAccess AS c', 'p.schemeID', '=', 'c.Scheme')
+                    ->join('glifeclass AS gc', 'p.class_code', '=', 'gc.class_code')
+                    ->select(
+                        'p.*',
+                        \DB::raw("CASE 
+                                WHEN p.SchemeDescription IS NOT NULL THEN CONCAT(p.policy_no, ' - ', p.SchemeDescription)
+                                WHEN p.CompanyName IS NOT NULL THEN CONCAT(p.policy_no, ' - ', p.CompanyName)
+                                ELSE p.policy_no
+                            END AS PolicyCompany"),
+                        'gc.Description AS ProductDescription',
+                        'gc.IsGroupLifeCover',
+                        'gc.IsCreditLifeCover',
+                        'gc.pen',
+                        'gc.IsPopFund'
+                    )
+                    ->orWhere('p.class_code', 1)
+                    ->orWhere('p.class_code', 5)
+                    ->orWhere('p.class_code', 10)
+                    ->orWhere('p.class_code', 8) // Replaced whereIn with orWhere
+                    //->orWhere('p.class_code', 5)
+                    //->orWhere('p.class_code', 1)
+                    // ->orWhere(array(
+                    //     'gc.pen' => 1,
+                    //     'gc.IsPopFund' => 5,
+                    //     'gc.class_code' => 1
+                    // ))
+                    //->where(function ($query) {
+                    //$query->where('p.StatusCode', '001')
+                    //->where('p.StatusCode', '001')
+                    //->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])// Current date between DateFrom and End_date
+                    //})
+                    //->where('c.AllowAccess', 1)
+                    //->distinct() // This ensures you get distinct records
+                    ->get();
+            } else {
+                //know if your are a client or a broker then querry separately...
+                $loginObj = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $user_id)->first();
+                if($loginObj->IsBroker){
+                    $brokerId = $loginObj->Broker;
+                    //fetch broker schemes
+                    $schemes = $this->britam_db->table('polschemeinfo AS p')
+                    //->join('ClientSchemesAccess AS c', 'p.policy_no', '=', 'c.PolicyNumber')
+                    ->join('glifeclass AS gc', 'p.class_code', '=', 'gc.class_code')
+                    ->join('glifeclientinfo as q', 'p.ClientNumber', '=', 'q.Id')
+                    ->select('p.*','q.name as CompanyName', \DB::raw("CASE 
+                            WHEN p.SchemeDescription IS NOT NULL 
+                            THEN CONCAT(p.policy_no, ' - ', p.SchemeDescription, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                            WHEN q.name IS NOT NULL 
+                            THEN CONCAT(p.policy_no, ' - ', q.name, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                            ELSE CONCAT(p.policy_no, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                        END AS PolicyCompany
+                        "), 'gc.Description AS ProductDescription', 'gc.IsGroupLifeCover', 'gc.IsCreditLifeCover', 'gc.pen', 'gc.IsPopFund') // ,'gc.IsLastExpense')
+                    ->where('p.interm_ID', $brokerId)
+                    ->where(function ($query) {
+                        $query->where('p.StatusCode', '001')
+                            ->orWhere('p.StatusCode', '005')
+                            ->orWhere('p.StatusCode', '011');
+                    })->distinct()
+                    //->where('c.AllowAccess', 1)
+                    //->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])
+                    ->distinct()
+                    ->get();
+
+                }else{
+                    $clientId = $loginObj->GroupClient;
+                    //fetch client schemes
+                    $schemes = $this->britam_db->table('polschemeinfo AS p')
+                    //->join('ClientSchemesAccess AS c', 'p.policy_no', '=', 'c.PolicyNumber')
+                    ->join('glifeclass AS gc', 'p.class_code', '=', 'gc.class_code')
+                    ->join('glifeclientinfo as q', 'p.ClientNumber', '=', 'q.Id')
+                    ->select('p.*','q.name as CompanyName', \DB::raw("CASE 
+                            WHEN p.SchemeDescription IS NOT NULL 
+                            THEN CONCAT(p.policy_no, ' - ', p.SchemeDescription, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                            WHEN q.name IS NOT NULL 
+                            THEN CONCAT(p.policy_no, ' - ', q.name, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                            ELSE CONCAT(p.policy_no, ' (', FORMAT(p.DateFrom, 'dd/MM/yyyy'), ' - ', FORMAT(p.End_Date, 'dd/MM/yyyy'), ')')
+                        END AS PolicyCompany
+                        "), 'gc.Description AS ProductDescription', 'gc.IsGroupLifeCover', 'gc.IsCreditLifeCover', 'gc.pen', 'gc.IsPopFund') // ,'gc.IsLastExpense')
+                    //->where('c.PortalUser', $user_id)
+                    ->where('p.ClientNumber', $clientId)
+                    ->where(function ($query) {
+                        $query->where('p.StatusCode', '001')
+                            ->orWhere('p.StatusCode', '005')
+                            ->orWhere('p.StatusCode', '011')
+                            ->orWhere('p.StatusCode', '010');
+                    })->distinct()
+                    //->where('c.AllowAccess', 1)
+                    //->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])
+                    //->distinct()
+                    //->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])
+                    ->distinct()
+                    ->get();
+                }
+
+                
+            }
+
 
 
             if ($schemes->isNotEmpty()) {
@@ -531,7 +627,6 @@ class GroupClientController extends Controller
                     'data' => []
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
@@ -540,9 +635,7 @@ class GroupClientController extends Controller
         }
     }
 
-    public function updateGCContactPersons(Request $request)
-    {
-    }
+    public function updateGCContactPersons(Request $request) {}
 
     public function getGCDirectors(Request $request)
     {
@@ -584,17 +677,10 @@ class GroupClientController extends Controller
                 'message' => 'Error fetching directors' . $th->getMessage()
             ], 500);
         }
-
     }
-    public function setGCDirectors(Request $request)
-    {
+    public function setGCDirectors(Request $request) {}
 
-    }
-
-    public function updateGCDirectors(Request $request)
-    {
-
-    }
+    public function updateGCDirectors(Request $request) {}
 
     public function getGCBankDetails(Request $request)
     {
@@ -638,15 +724,9 @@ class GroupClientController extends Controller
         }
     }
 
-    public function setGCBankDetails(Request $request)
-    {
+    public function setGCBankDetails(Request $request) {}
 
-    }
-
-    public function updateGCBankDetails(Request $request)
-    {
-
-    }
+    public function updateGCBankDetails(Request $request) {}
     //get debit notes of a particular scheme
     public function getDebitNotes(Request $request)
     {
@@ -688,7 +768,6 @@ class GroupClientController extends Controller
                     ->where("d.client_no", $client->Client)
                     ->where("d.drcr", "DR")
                     ->get();
-
             } else if ($contact_person_id != null && $is_group_client == 0) {
 
                 // print the db connection
@@ -707,8 +786,8 @@ class GroupClientController extends Controller
                         END AS PolicyCompany"), "g.Narration AS EndorsementNarration")
                     ->where("d.interm_ID", $intermediary->Intermediary)
                     ->where("d.drcr", "DR")
+                    ->where("d.isReversed", 0)
                     ->get();
-
             } else {
                 //thow an error
                 return response()->json([
@@ -736,7 +815,6 @@ class GroupClientController extends Controller
                     'data' => []
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -788,7 +866,6 @@ class GroupClientController extends Controller
                     ->where("d.client_no", $client->Client)
                     ->where("d.drcr", "CR")
                     ->get();
-
             } else if ($contact_person_id != null && $is_group_client == 0) {
 
                 $contact_person = $this->britam_db->table('PortalUserLoginInfo')->select('ContactPerson')->where('Id', $contact_person_id)->first();
@@ -806,7 +883,6 @@ class GroupClientController extends Controller
                     ->where("d.interm_ID", $intermediary->Intermediary)
                     ->where("d.drcr", "CR")
                     ->get();
-
             } else {
                 //thow an error
                 return response()->json([
@@ -830,8 +906,6 @@ class GroupClientController extends Controller
                     'data' => []
                 ], 404);
             }
-
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([

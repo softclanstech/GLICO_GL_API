@@ -11,29 +11,13 @@ class ReportsController extends Controller
     public function getReportsLaravel(Request $request)
     {
         try {
-            $results = [];
-            // $reference = $request->input('SchemeID');
-            // $settings = $request->input('settings');
-            // $schemeID = $request->input('SchemeID');
-            // $fundYear = $request->input('fund_year');
-            $reference = $request->input('SchemeID');
-            $settings = $request->input('settings');
-            $schemeID = $request->input('SchemeID');
-            $fundYear = $request->input('fund_year');
-             $url_path = 'https://localhost:44345/api/Report/Report/';
-          //  $url_path = 'https://localhost:44345/api/Report/Report/';
-       //     $url_path = $request->input('https://localhost:44345/api/Report/Report');
-            $client = new Client([
-                'verify' => false, 
-            ]);
-    
+
+            $url_path = "http://192.168.1.248:85/api/Report/Report";
+            $criteria = $request->input('criteria');
+            $client = new \GuzzleHttp\Client;
+
             $response = $client->post($url_path, [
-                'json' => [
-                    'reference' => $reference,
-                    'settings' => $settings,
-                    'SchemeID' => $schemeID,
-                    'fund_year' => $fundYear
-                ],
+                'json' => $criteria,
                 'headers' => [
                     'Content-Type' => 'application/json'
                 ]
@@ -41,9 +25,10 @@ class ReportsController extends Controller
 
             if ($response->getStatusCode() == 200) {
                 $results = $response->getBody()->getContents();
-            }   
+            }
+            $base64Rpt = response($results, 200)->header('Content-Type', 'application/json');
 
-            return response($results, 200)->header('Content-Type', 'application/json');
+            return $base64Rpt;
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,

@@ -62,7 +62,7 @@ Route::group(
     ],
     function () {
 
-        //defaults
+        //defaults - 
         Route::get('/occupation-classes', [DefaultParamsController::class, 'getOccupationClasses']);
         Route::get('/nature-of-business', [DefaultParamsController::class, 'getNatureOfBusiness']);
         Route::get('/access-types', [DefaultParamsController::class, 'getAccessType']);
@@ -74,6 +74,10 @@ Route::group(
         Route::get('/counties', [DefaultParamsController::class, 'getCountyInfo']);
         Route::get('/claim-types', [DefaultParamsController::class, 'getClaimTypes']);
         Route::get('/product-classes', [DefaultParamsController::class, 'getProductClasses']);
+        Route::get('/product-rider-classes', [DefaultParamsController::class, 'getPlanRiderConfig']);
+        Route::get('/product-packages-classes', [DefaultParamsController::class, 'getProductPackages']);
+        //
+        //Route::get('/product-classes', [DefaultParamsController::class, 'getPlanRiderConfig']);
         Route::get('/endorsement-types', [DefaultParamsController::class, 'getEndorsementTypes']);
         Route::get('/claim-causes', [DefaultParamsController::class, 'getClaimCauses']);
         Route::get('/get-payment-methods', [DefaultParamsController::class, 'getPaymemtModesinfo']);
@@ -84,6 +88,7 @@ Route::group(
         Route::get('/get-claim-reasons', [DefaultParamsController::class, 'getClaimReasons']);
         Route::get('/get-underwriting-doc-types', [DefaultParamsController::class, 'getUnderwritingDocs']);
         Route::get('/get-payment-modes', [DefaultParamsController::class, 'getPaymentModes']);
+        Route::get('/get-loan-types', [DefaultParamsController::class, 'getGlLoanTypes']);
 
         //client
         Route::get('/getGroupClients', [GroupClientController::class, 'getGroupClients']);
@@ -119,7 +124,7 @@ Route::group(
         Route::get('/broker-contact-persons', [BrokersController::class, 'getBrokerContactPersons']);
 
 
-        //claims
+        //claims 
         Route::get('/search-claimant', [ClaimsController::class, 'searchClaimantByName']);
         Route::get('/all-claims-on-scheme', [ClaimsController::class, 'getAllClaimsUnderScheme']);
         Route::get('/get-required-docs', [ClaimsController::class, 'getRequiredDocuments']);
@@ -128,6 +133,7 @@ Route::group(
         Route::get('/get-claim-requests', [ClaimsController::class, 'getClaimRequests']);
         Route::get('/get-scheme-benefit', [ClaimsController::class, 'getSchemeBenefit']);
         Route::get('/claim-status', [ClaimsController::class, 'getClaimStatus']);
+        Route::post('/approve-claim', [ClaimsController::class, 'approveClaimRequest']);
 
         //schemes
         Route::get('/getClientSchemes', [SchemesController::class, 'getClientSchemes']);

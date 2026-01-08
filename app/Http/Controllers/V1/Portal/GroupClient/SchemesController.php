@@ -39,7 +39,6 @@ class SchemesController extends Controller
                 "A notification will be sent to your email once the endorsement has been fully processed.\n\n" .
                 "Should you have any queries or concerns regarding your policy, kindly reach out to grouplifeservices@britam.com or call us on 0703 094 000.
                 ";
-
         } else if ($endorsement_type == 3) {
             $subject = "Leaver Endorsement Request Notification";
             $message_to_be_sent = "Dear $contact_person_customer_name,\n\n" .
@@ -52,7 +51,6 @@ class SchemesController extends Controller
                 "A notification will be sent to your email once the endorsement has been fully processed.\n\n" .
                 "Should you have any queries or concerns regarding your policy, kindly reach out to grouplifeservices@britam.com or call us on 0703 094 000.
                 ";
-
         } else if ($endorsement_type == 6) {
             $subject = "Salary Revision Endorsement Request Notification";
             $message_to_be_sent = "Dear $contact_person_customer_name,\n\n" .
@@ -195,8 +193,6 @@ class SchemesController extends Controller
                     'message' => 'Client is not a a corporate institution.'
                 ], 400);
             }
-
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -261,9 +257,7 @@ class SchemesController extends Controller
                         'message' => 'No members found'
                     ], 404);
                 }
-
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -300,7 +294,7 @@ class SchemesController extends Controller
             $client_type = $this->britam_db->table('glifeclientinfo', 'g')
                 ->join('polschemeinfo as p', 'p.ClientNumber', '=', 'g.Id')
                 //->join('glmembersinfo as gm', 'gm.SchemeID', '=', 'p.schemeID')
-                ->where('p.SchemeID', $scheme_id)
+                ->where('p.schemeID', $scheme_id)
                 ->select('g.client_type')
                 ->first();
 
@@ -318,16 +312,48 @@ class SchemesController extends Controller
                 //         'message' => 'Scheme is not for a corporate institution.'
                 //     ], 400);
             } else {
-                $results = $this->britam_db->table('glmembersinfo')
+
+                //TODO - check if its popfund....
+                //1. Check if class_code is popfund
+                $StatementObj = $this->britam_db->table('polschemeinfo', 'g')
+                ->join('glifeclass as p', 'p.class_code', '=', 'g.class_code')
+                //->join('glmembersinfo as gm', 'gm.SchemeID', '=', 'p.schemeID')
+                ->where('g.schemeID', $scheme_id)
+                ->select('p.IsPopFund','p.pen','p.IsGrp')
+                ->first();
+
+                $IsPopFund = $StatementObj->IsPopFund;
+                $Ispen = $StatementObj->pen;
+                $IsGrp = $StatementObj->IsGrp;
+
+                if($IsPopFund == "1" || $IsPopFund == 1 || $Ispen == "1" || $Ispen == 1 || $IsGrp == "1" || $IsGrp == 1){
+                    if($IsPopFund == "1" || $IsPopFund == 1 || $Ispen == "1" || $Ispen == 1){
+                        $results = $this->britam_db->table('glmembersinfo')
+                        ->select("*")
+                        ->where("schemeID", $scheme_id)
+                        ->where(function ($query) use ($search_name) {
+                            $query->where("member_no", '=', $search_name)
+                                ->where("IsActive", '=', "1");
+                        })
+                        ->get();
+                    } else if(($Ispen == "1" || $Ispen == 1) && ($IsGrp == "1" || $IsGrp == 1)){
+                        
+                        $results = $this->britam_db->table('polschemeinfo')
+                        ->select("CompanyName as Names", "policy_no as member_no", "schemeID as SchemeID")
+                        ->where("schemeID", $scheme_id)
+                        ->get();
+                    }
+                    
+                } else {
+                    $results = $this->britam_db->table('glmembersinfo')
                     ->select("*")
                     ->where("schemeID", $scheme_id)
                     ->where(function ($query) use ($search_name) {
                         $query->where("Names", 'LIKE', '%' . $search_name . '%')
                             ->orWhere("member_no", 'LIKE', '%' . $search_name . '%');
                     })
-                    ->get();
-
-
+                    ->get(); 
+                }
 
                 if (sizeof($results) > 0) {
 
@@ -344,9 +370,7 @@ class SchemesController extends Controller
                         'message' => 'No members found'
                     ], 404);
                 }
-
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -404,16 +428,13 @@ class SchemesController extends Controller
                     'message' => 'No members found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching data' . $th->getMessage()
             ], 500);
-
         }
-
     }
 
     public function setEndorsementRequest(Request $request)
@@ -498,7 +519,6 @@ class SchemesController extends Controller
                     }
                 }
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -568,7 +588,6 @@ class SchemesController extends Controller
                     'message' => 'Error adding members'
                 ], 500);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -706,21 +725,17 @@ class SchemesController extends Controller
                 if ($endorsement_type == 2) {
 
                     $joiner_endorse_type = $this->britam_db->table('glifeEndorsementType')->select("id")->where("IsSupplimentary", 1)->first();
-
                 } else if ($endorsement_type == 3) {
 
                     $exits_endorse_type = $this->britam_db->table('glifeEndorsementType')->select("id")->where("IsDeletion", 1)->first();
-
                 } else if ($endorsement_type == 6) {
 
                     $salary_rev_endorse_type = $this->britam_db->table('glifeEndorsementType')->select("id")->where("IsRevisedSalary", 1)->first();
-
                 } else if ($endorsement_type == 7) {
 
                     $joiner_dep_endorse_type = $this->britam_db->table('glifeEndorsementType')->select("id")->where("IsSupplimentary", 1)->first();
                     //Log::channel('corporate_api')->info('Joiner Dependant Endorsement type: ' . json_encode($joiner_dep_endorse_type, JSON_PRETTY_PRINT));
                     $dependants_only_addition = 1;
-
                 }
 
                 //Log::channel('corporate_api')->info('Endorsement type: ' . json_encode($endorsement_type_id, JSON_PRETTY_PRINT));
@@ -776,7 +791,6 @@ class SchemesController extends Controller
                                 'message' => 'Member already exists in an existing pending endorsement request'
                             ], 400);
                         }
-
                     }
 
                     $this->britam_db->table('glmembersinfo')->where('MemberId', $policy_member_id)->update(['EndRequest' => $request_id]);
@@ -820,33 +834,32 @@ class SchemesController extends Controller
                         'created_on' => date('Y-m-d H:i:s'),
                         'created_by' => 'API',
                     ]);
-
                 } else if ($joiner_endorse_type != null) { // 2 being joiners
 
                     // check if the scheme has a category
-            $category = $this->britam_db->table('polschemeinfo')->select("with_categories")->where("schemeID", $scheme_id)->first();
-            
-            if ($category->with_categories == 1) {
-                if ($category_code == null) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Category code is required'
-                    ], 400);
-                }
-            }
+                    $category = $this->britam_db->table('polschemeinfo')->select("with_categories")->where("schemeID", $scheme_id)->first();
 
-            // check for UseMemberRate in the scheme 
-            $use_member_rate = $this->britam_db->table('polschemeinfo')->select("UseMemberRate")->where("schemeID", $scheme_id)->first();
+                    if ($category->with_categories == 1) {
+                        if ($category_code == null) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Category code is required'
+                            ], 400);
+                        }
+                    }
 
-            // if it is true(1) then the premium rate is required else it is not
-            if ($use_member_rate->UseMemberRate == 1) {
-                if ($premium_rate == null) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Premium rate is required'
-                    ], 400);
-                }
-            }
+                    // check for UseMemberRate in the scheme 
+                    $use_member_rate = $this->britam_db->table('polschemeinfo')->select("UseMemberRate")->where("schemeID", $scheme_id)->first();
+
+                    // if it is true(1) then the premium rate is required else it is not
+                    if ($use_member_rate->UseMemberRate == 1) {
+                        if ($premium_rate == null) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Premium rate is required'
+                            ], 400);
+                        }
+                    }
 
                     $requested_members = $this->britam_db->table('EndorsementMembers')->insertGetId([
                         'MemberName' => $member_name,
@@ -895,7 +908,6 @@ class SchemesController extends Controller
                             if (sizeof($memberDependants) > 0) {
                                 $this->britam_db->table('EndorsementDependants')->insert($memberDependants);
                             }
-
                         } else if (($has_dependants == 1) && (sizeof($request['dependants']) == 0)) {
                             return response()->json([
                                 'success' => false,
@@ -911,7 +923,6 @@ class SchemesController extends Controller
                         $size_of_dependants = 0;
                         Log::channel('corporate_api')->info('Endorsement request dependants: 0');
                     }
-
                 } else if ($salary_rev_endorse_type != null) { // 6 being for salary change
 
                     $member_id_present = $this->britam_db->table('EndorsementMembers')->select("*")->where("MemberId", $policy_member_id)->first();
@@ -933,7 +944,6 @@ class SchemesController extends Controller
                                 'message' => 'Member already exists in an existing pending endorsement request'
                             ], 400);
                         }
-
                     }
 
                     if ($new_member_salary == null) {
@@ -979,29 +989,29 @@ class SchemesController extends Controller
                 } else if ($joiner_dep_endorse_type != null) { // 7 being for adding dependants to existing members
 
                     // check if the scheme has a category
-            $category = $this->britam_db->table('polschemeinfo')->select("with_categories")->where("schemeID", $scheme_id)->first();
-            
-            if ($category->with_categories == 1) {
-                if ($category_code == null) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Category code is required'
-                    ], 400);
-                }
-            }
+                    $category = $this->britam_db->table('polschemeinfo')->select("with_categories")->where("schemeID", $scheme_id)->first();
 
-            // check for UseMemberRate in the scheme 
-            $use_member_rate = $this->britam_db->table('polschemeinfo')->select("UseMemberRate")->where("schemeID", $scheme_id)->first();
+                    if ($category->with_categories == 1) {
+                        if ($category_code == null) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Category code is required'
+                            ], 400);
+                        }
+                    }
 
-            // if it is true(1) then the premium rate is required else it is not
-            if ($use_member_rate->UseMemberRate == 1) {
-                if ($premium_rate == null) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Premium rate is required'
-                    ], 400);
-                }
-            }
+                    // check for UseMemberRate in the scheme 
+                    $use_member_rate = $this->britam_db->table('polschemeinfo')->select("UseMemberRate")->where("schemeID", $scheme_id)->first();
+
+                    // if it is true(1) then the premium rate is required else it is not
+                    if ($use_member_rate->UseMemberRate == 1) {
+                        if ($premium_rate == null) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Premium rate is required'
+                            ], 400);
+                        }
+                    }
 
                     $this->britam_db->table('glmembersinfo')->where('MemberId', $policy_member_id)->update(['EndRequest' => $request_id]);
                     $this->britam_db->table('glmembersinfo')->where('MemberId', $policy_member_id)->update(['HasDependants' => 1]);
@@ -1078,7 +1088,6 @@ class SchemesController extends Controller
                             if (sizeof($memberDependants) > 0) {
                                 $this->britam_db->table('EndorsementDependants')->insert($memberDependants);
                             }
-
                         } else if (($has_dependants == 1) && (sizeof($request['dependants']) == 0)) {
                             return response()->json([
                                 'success' => false,
@@ -1134,7 +1143,6 @@ class SchemesController extends Controller
 
                         $file_ids[] = $file_id;
                     }
-
                 }
 
                 if (($request_id > 0) && ($requested_members > 0)) {
@@ -1207,7 +1215,6 @@ class SchemesController extends Controller
                     'message' => 'No members found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
 
             $this->britam_db->rollBack();
@@ -1406,7 +1413,6 @@ class SchemesController extends Controller
                     'message' => 'Error adding dependant'
                 ], 500);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -1513,7 +1519,6 @@ class SchemesController extends Controller
                                 'RelationshipType' => $result->RelationshipType,
                             ];
                         }
-
                     } else if ($bulk_upload == 1) {
 
                         if (!isset($structuredData[$request_id])) {
@@ -1543,14 +1548,12 @@ class SchemesController extends Controller
                     'count' => count($structuredData),
                     'data' => $structuredData,
                 ]);
-
             } else {
                 return response()->json([
                     'success' => false,
                     'message' => 'No requests found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             return response()->json([
                 'success' => false,
@@ -1655,7 +1658,6 @@ class SchemesController extends Controller
                                             "))
                             ->where('p.schemeID', $scheme_id)
                             ->get();
-
                     }
 
                     if (sizeof($results) > 0) {
@@ -1672,7 +1674,6 @@ class SchemesController extends Controller
                         ], 200);
                     }
                 }
-
             } else {
 
                 //SELECT * FROM gliferider_info g;
@@ -1687,20 +1688,14 @@ class SchemesController extends Controller
                         'count' => count($results),
                         'data' => $results
                     ], 200);
-
                 } else {
 
                     return response()->json([
                         'success' => true,
                         'message' => 'No riders found'
                     ], 204);
-
                 }
-
             }
-
-
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -1751,7 +1746,6 @@ class SchemesController extends Controller
                     'message' => 'No dependants and beneficiaries found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -1801,7 +1795,6 @@ class SchemesController extends Controller
                     'message' => 'No dependants found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -1850,7 +1843,6 @@ class SchemesController extends Controller
                     'message' => 'No beneficiaries found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -1877,11 +1869,12 @@ class SchemesController extends Controller
 
         try {
 
+            $currentDate = date('Y-m-d');
             $client_type = $request->input('client_type');
             $login_user_id = $request->input('contact_persons_id');
 
             //get contactpersonid from the portalloginuser
-            $cp_id = $this->britam_db->table('PortalUserLoginInfo')->select('ContactPerson')->where('Id', $login_user_id)->first();
+            $cp_id = $this->britam_db->table('PortalUserLoginInfo')->select('GroupClient', 'ContactPerson')->where('Id', $login_user_id)->first();
 
             if ($cp_id == null) {
                 return response()->json([
@@ -1891,10 +1884,13 @@ class SchemesController extends Controller
             }
 
             $contact_persons_id = $cp_id->ContactPerson;
+            $cliendId = $cp_id->GroupClient;
 
             $results = [];
 
             if ($client_type == 1) {
+                //lets get the client id from the contact person id
+                //$client_id = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $contact_persons_id)->first()->GroupClient;
                 $results = $this->britam_db->table('polschemeinfo as p')
                     ->select('p.schemeID', 'p.DateFrom', 'p.End_date', 'p.PolAnniversary', \DB::raw("CASE 
                             WHEN p.SchemeDescription IS NOT NULL THEN CONCAT(p.SchemeDescription, ' - ', p.policy_no)
@@ -1902,30 +1898,41 @@ class SchemesController extends Controller
                             ELSE p.policy_no
                         END AS PolicyCompany"), 'gs.Description AS Status')
                     ->join('glifestatus as gs', 'gs.status_code', '=', 'p.StatusCode')
-                    ->join('ClientSchemesAccess as ca', 'ca.scheme', '=', 'p.schemeID')
+                    //->join('ClientSchemesAccess as ca', 'ca.scheme', '=', 'p.schemeID')
                     ->where(function ($query) {
                         $query->where('p.StatusCode', '001')
-                            ->orWhere('p.StatusCode', '005');
+                            ->orWhere('p.StatusCode', '005')
+                            ->orWhere('p.StatusCode', '010');
                     })
-                    ->where('ca.ContactPersonReferred', $contact_persons_id)
-                    ->where('ca.AllowAccess', 1)
+                    //lets use dates
+                    //->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])
+                    //->where('ca.ContactPersonReferred', $contact_persons_id)
+                    //->where('ca.AllowAccess', 1)
+                    ->where('p.ClientNumber', $cliendId)
                     ->get();
-
             } else if ($client_type == 2) {
+                //get the intermediary Id,
+                $loginObj = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $contact_persons_id)->first();
+                $brokerId = $loginObj->Broker;
+
                 $results = $this->britam_db->table('polschemeinfo as p')
-                    ->select('p.schemeID', 'p.DateFrom', 'p.End_date', 'p.PolAnniversary', \DB::raw("CASE 
+                    ->join('glifestatus as gs', 'gs.status_code', '=', 'p.StatusCode')
+                    ->join('glifeclientinfo as q', 'p.ClientNumber', '=', 'q.Id')
+                    ->select('p.schemeID', 'p.DateFrom', 'p.End_date', 'p.PolAnniversary','q.name as CompanyName', 
+                    \DB::raw("CASE 
                             WHEN p.SchemeDescription IS NOT NULL THEN CONCAT(p.SchemeDescription, ' - ', p.policy_no)
-                            WHEN p.CompanyName IS NOT NULL THEN CONCAT(p.CompanyName, ' - ', p.policy_no)
+                            WHEN q.name IS NOT NULL THEN CONCAT(q.name, ' - ', p.policy_no)
                             ELSE p.policy_no
                         END AS PolicyCompany"), 'gs.Description AS Status')
-                    ->join('glifestatus as gs', 'gs.status_code', '=', 'p.StatusCode')
-                    ->join('ClientSchemesAccess as ca', 'ca.scheme', '=', 'p.schemeID')
+                    //->join('ClientSchemesAccess as ca', 'ca.scheme', '=', 'p.schemeID')
                     ->where(function ($query) {
                         $query->where('p.StatusCode', '001')
                             ->orWhere('p.StatusCode', '005');
                     })
-                    ->where('ca.ContactPersonReferred', $contact_persons_id)
-                    ->where('ca.AllowAccess', 1)
+                    ->where('p.interm_ID', $brokerId)
+                    //->where('ca.ContactPersonReferred', $contact_persons_id)
+                    //->where('ca.AllowAccess', 1)
+                    ->whereRaw('? BETWEEN p.DateFrom AND p.End_date', [$currentDate])
                     ->get();
             }
 
@@ -1943,7 +1950,6 @@ class SchemesController extends Controller
                     'message' => 'No policy cover periods found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -2107,7 +2113,6 @@ class SchemesController extends Controller
                             $this->sendEndorsementRequestNotification($request_id, $scheme_id, $endorsement_type, $effective_date, $requested_change, $token, $contact_person_email, $contact_person_email_who_initiated);
                         }
                     }
-
                 }
 
                 return response()->json([
@@ -2127,7 +2132,6 @@ class SchemesController extends Controller
                     'message' => 'Error uploading file'
                 ], 500);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -2203,7 +2207,6 @@ class SchemesController extends Controller
                     'message' => 'No extra premium debit notes found for the client.'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -2256,7 +2259,6 @@ class SchemesController extends Controller
                     'message' => 'No receipts found'
                 ], 404);
             }
-
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
@@ -2264,7 +2266,5 @@ class SchemesController extends Controller
                 'message' => 'Error fetching data' . $th->getMessage()
             ], 500);
         }
-
     }
-
 }
