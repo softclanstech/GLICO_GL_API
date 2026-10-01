@@ -31,7 +31,7 @@ class AzureAdAuthMiddleware
 
 
             $headers = [
-                'Ocp-Apim-Subscription-Key' => '12eab6d7b2b248a3b7f5fa0256884b2b',
+                'Ocp-Apim-Subscription-Key' => config('services.azure_ad.subscription_key'),
                 'Authorization' => 'Bearer ' . $token,
             ];
 

@@ -27,13 +27,16 @@ class Controller extends BaseController
 
     public function generateClientCredentialsToken()
     {
-        //$url = env('APP_URL') . '/oauth/token';
-        $url = 'http://127.0.0.1:8000/oauth/token';
+        $url = config('services.passport_client.token_url');
+        $client_id = config('services.passport_client.client_id');
+        $client_secret = config('services.passport_client.client_secret');
 
-        // $client_id = env('CLIENT_ID', '1');
-        // $client_secret = env('CLIENT_SECRET', 'M6eUvovO28Cn2ZbqT3RBLZY8uP7hpHnPtgTY0ASS');
-        $client_id = '99b1beaf-1fb8-4077-b533-06992472852b';//'15';
-        $client_secret = 'lUeviYKNH9XblnJDYSnFQwPFJy0NV2WKlcqYGM2E';//'QritycYY3L9RMfh8dANWM7PJGPz3BxzOGOWqamNq';
+        if (!$client_id || !$client_secret) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client credentials are not configured.',
+            ], 500);
+        }
 
         $data = [
             'grant_type' => 'client_credentials',
@@ -301,10 +304,10 @@ class Controller extends BaseController
     {
 
         // POST https://brtgw.britam.com/notification/api/v1/create/email/
-        // Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6InEtMjNmYWxldlpoaEQzaG05Q1Fia1A1TVF5VSIsImtpZCI6InEtMjNmYWxldlpoaEQzaG05Q1Fia1A1TVF5VSJ9.eyJhdWQiOiJhcGk6Ly8yNTUxYTZhZS0wMzlkLTQzYmItYjA1ZS04ZDk3ZDA3ZjE1ZTIiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9lMzAzZjIxOS03NWVmLTQ3OWEtYjIzYy0zNWFjOTQ3OWE4Y2UvIiwiaWF0IjoxNzEyODM0NDg1LCJuYmYiOjE3MTI4MzQ0ODUsImV4cCI6MTcxMjgzODM4NSwiYWlvIjoiRTJOZ1lIajNLL2VmY25LWUNjZXNucDJpUjZ5dkF3QT0iLCJhcHBpZCI6IjgxNmFhNDU3LWQyNTgtNDUyNi05ZTVjLTdiNjhlOTU3ODU2OSIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0L2UzMDNmMjE5LTc1ZWYtNDc5YS1iMjNjLTM1YWM5NDc5YThjZS8iLCJvaWQiOiJkODA4OTZmZS0zYjBlLTQwZDYtOWNkYy0xY2JlMjNhZDhiYzYiLCJyaCI6IjAuQVI4QUdmSUQ0LTkxbWtleVBEV3NsSG1venE2bVVTV2RBN3REc0Y2Tmw5Ql9GZUlmQUFBLiIsInJvbGVzIjpbIlJlZ2lzdGVyQ2xpZW50IiwiVmVyaWZ5QWdlbnQiXSwic3ViIjoiZDgwODk2ZmUtM2IwZS00MGQ2LTljZGMtMWNiZTIzYWQ4YmM2IiwidGlkIjoiZTMwM2YyMTktNzVlZi00NzlhLWIyM2MtMzVhYzk0NzlhOGNlIiwidXRpIjoiVmZOVHlsQ1NYRXVLOUFfV2ZlNlRBQSIsInZlciI6IjEuMCJ9.PDGQ5v9rt8Ma0HTPb80Ql1lk9UkKaZjn54AzCwpWaKjfNhwKvxNWnr6lyB_k0pIb4lucVt2fUdvyvNt76uu8vC9Khng8O3XzF98HErl2AGleJaZl5sA6nBoYOHO0VZiwjSsixl2yJO6P6eajjj5ZC_TcNqB9saoba7LFt0KkDeS176wlI31jyKUiOoBlDtRoCeKs3EldcBkDGP1FS_1Oo-tuMzSG0uZ7qCVKNBYqz1xGq2QY7dYH_BKmVveay8F8V4u6bSYEPcL-zAK1IjtTGqQA8Fw6lkvRJT0x7v6T162p7C1pUR4LRC_DwcJxtG4mQa8y7oBftYTMxFOmKZQUlA
+        // Authorization: Bearer <token>
 
         // Content-Type: application/json
-        // Ocp-Apim-Subscription-Key: 12eab6d7b2b248a3b7f5fa0256884b2b
+        // Ocp-Apim-Subscription-Key: <BRITAM_GATEWAY_SUBSCRIPTION_KEY>
 
         // {
         //     "ref_no":"EM1003",
@@ -321,7 +324,7 @@ class Controller extends BaseController
         $url = 'https://brtgw.britam.com/notification/api/v1/create/email/';
 
         $headers = [
-            'Ocp-Apim-Subscription-Key' => '12eab6d7b2b248a3b7f5fa0256884b2b',
+            'Ocp-Apim-Subscription-Key' => config('services.azure_ad.subscription_key'),
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $token
         ];

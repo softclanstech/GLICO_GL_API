@@ -12,14 +12,9 @@ class Azure_AD_AuthController extends Controller
     public function azure_ad_token_request(Request $request)
     {
 
-        //store in the env and retrieve them from there
-        // $client_ref = env('AZURE_CLIENT_REF');
-        // $client_secret = env('AZURE_CLIENT_SECRET');
-        // $tenant_id = env('AZURE_TENANT_ID');
-
-        $client_ref = '816aa457-d258-4526-9e5c-7b68e9578569'; //$request->client_ref;
-        $client_secret = 'AgR8Q~3xBPUVWf82H9KuT~POeb79kGyscxT9ycK5';
-        $tenant_id = 'e303f219-75ef-479a-b23c-35ac9479a8ce';
+        $client_ref = config('services.azure_ad.client_ref');
+        $client_secret = config('services.azure_ad.client_secret');
+        $tenant_id = config('services.azure_ad.tenant_id');
 
         //error handling
         if (!$client_ref || !$client_secret || !$tenant_id) {
@@ -33,11 +28,11 @@ class Azure_AD_AuthController extends Controller
         $http = new \GuzzleHttp\Client;
 
         $headers = [
-            'Ocp-Apim-Subscription-Key' => '12eab6d7b2b248a3b7f5fa0256884b2b',
+            'Ocp-Apim-Subscription-Key' => config('services.azure_ad.subscription_key'),
             'Cache-Control' => 'no-cache',
         ];
 
-        $response = $http->post('https://brtgw.britam.com/api/auth/login/', [
+        $response = $http->post(config('services.azure_ad.gateway_url'), [
             'headers' => $headers,
             'form_params' => [
                 'tenant_id' => $tenant_id,
