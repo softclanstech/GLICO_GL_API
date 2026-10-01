@@ -31,4 +31,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'azure_mail' => [
+        'tenant_id' => env('AZURE_MAIL_TENANT_ID'),
+        'client_id' => env('AZURE_MAIL_CLIENT_ID'),
+        'client_secret' => env('AZURE_MAIL_CLIENT_SECRET'),
+        'sender' => env('AZURE_MAIL_SENDER', 'noreply@glicolife.com'),
+    ],
+
 ];

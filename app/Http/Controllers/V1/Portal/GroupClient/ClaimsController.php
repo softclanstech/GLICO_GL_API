@@ -522,18 +522,16 @@ class ClaimsController extends Controller
 
                 if (isset($new_scheme_obj)) {
                     $new_scheme_id = $new_scheme_obj->schemeID;
-                    $new_member_id = $this->britam_db->table('glmembersinfo')
+                    $new_member_obj = $this->britam_db->table('glmembersinfo')
                         ->where('SchemeID', $new_scheme_id)
                         ->where('Names', $member_name)
                         ->first();
-                    if(isset($new_member_id)){
-                        $member_id = $new_member_id->MemberId;
-                    }
+                    
 
-                    if (isset($new_scheme_id) && ($new_scheme_id->schemeID != $scheme_id)) {
-                        $scheme_id = $new_scheme_id->schemeID;
-                        if (isset($new_member_id) && ($new_member_id->MemberId != $member_id)) {
-                            $member_id = $new_member_id->MemberId;
+                    if (isset($new_scheme_id) && ($new_scheme_id != $scheme_id)) {
+                        $scheme_id = $new_scheme_id;
+                        if (isset($new_member_obj) && ($new_member_obj->MemberId != $member_id)) {
+                            $member_id = $new_member_obj->MemberId;
                         }
                     }
                 }
@@ -849,10 +847,8 @@ class ClaimsController extends Controller
                 //fetch the claims that status is 016
                 $brokerId = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $portal_user_id)->first()->Broker;
 
-                $results = $this->britam_db->table('ClaimRequest as c')
-                    ->join('polschemeinfo as t4', function ($join) use ($brokerId) {
-                        $join->on('t4.interm_ID', '=', \DB::raw($brokerId)); // Use DB::raw to treat it as a value, not a column
-                    })
+                $query = $this->britam_db->table('ClaimRequest as c')
+                    ->join('polschemeinfo as t4', 't4.schemeID', '=', 'c.SchemeID')
                     ->join('glmembersinfo as g', 'g.MemberId', '=', 'c.Member')
                     ->leftJoin('glifestatus as t3', 't3.status_code', '=', 'c.ClaimStatus')
                     ->leftJoin('SchemeBenefitConfig as gcl', 'gcl.id', '=', 'c.SchemeBenefit')
@@ -864,8 +860,17 @@ class ClaimsController extends Controller
                         'gcl.Description as Claim_Type',
                         't3.Description as Claim_Status'
                     )
-                    ->where('c.ClaimStatus', "016")
-                    ->get();
+                    ->where('t4.interm_ID', $brokerId)
+                    ->where('c.ClaimStatus', "016");
+
+                // DEBUG: log the full SQL with bindings substituted
+                $sql = $query->toSql();
+                foreach ($query->getBindings() as $binding) {
+                    $sql = preg_replace('/\?/', is_numeric($binding) ? $binding : "'" . addslashes($binding) . "'", $sql, 1);
+                }
+                \Illuminate\Support\Facades\Log::info('Broker claims query: ' . $sql);
+
+                $results = $query->get();
             } else {
                 if (isset($id)) {
                     //inner join to get the staff no

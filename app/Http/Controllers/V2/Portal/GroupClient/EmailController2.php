@@ -138,7 +138,7 @@ class EmailController2 extends Controller
                 $contactpersoninfo_details = $this->britam_db->table('PortalUserLoginInfo')
                     ->join('contactpersoninfo', 'contactpersoninfo.id', '=', 'PortalUserLoginInfo.ContactPerson')
                     ->where('PortalUserLoginInfo.ContactPerson', $contact_person_id)
-                    ->select('contactpersoninfo.ContactEmail', 'PortalUserLoginInfo.Otp')
+                    ->select('contactpersoninfo.ContactEmail')
                     ->first();
 
                 $to = $email;
@@ -148,6 +148,7 @@ class EmailController2 extends Controller
                 $token = $request->bearerToken();
 
                 $result = $this->sendEmail($to, $subject, $message, $contactpersoninfo_details);
+                //print_r($result);
                // $result = self::britam_email_sending($subject, $message, $to, $token);
 
                 if ($result) {

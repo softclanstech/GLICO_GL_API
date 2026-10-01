@@ -494,6 +494,8 @@ class GroupClientController extends Controller
             $contact_person_id = $request->input('contact_person_id');
             $is_pop_fund = $request->input('is_pop_fund');
 
+            $loginObj = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $contact_person_id)->first();
+
             // get PortalUsageLoginInfo id from contact_person_id
             $user_id = $contact_person_id;
             $currentDate = date('Y-m-d');
@@ -551,7 +553,7 @@ class GroupClientController extends Controller
                     ->get();
             } else {
                 //know if your are a client or a broker then querry separately...
-                $loginObj = $this->britam_db->table('PortalUserLoginInfo')->where('Id', $user_id)->first();
+                
                 if($loginObj->IsBroker){
                     $brokerId = $loginObj->Broker;
                     //fetch broker schemes
@@ -571,6 +573,7 @@ class GroupClientController extends Controller
                     ->where(function ($query) {
                         $query->where('p.StatusCode', '001')
                             ->orWhere('p.StatusCode', '005')
+                            ->orWhere('p.StatusCode', '010')
                             ->orWhere('p.StatusCode', '011');
                     })->distinct()
                     //->where('c.AllowAccess', 1)

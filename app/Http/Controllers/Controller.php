@@ -104,7 +104,7 @@ class Controller extends BaseController
         return $request_number;
     }
 
-    public function sendEmail($to, $subject, $message, $login_details)
+    public function sendEmails($to, $subject, $message, $login_details)
     {
         try {
             Mail::raw($message, function ($mail) use ($to, $subject) {
@@ -119,6 +119,88 @@ class Controller extends BaseController
                 ], 500);
             }
     
+            return response()->json([
+                'success' => true,
+                'message' => 'Email sent successfully.',
+                'data' => $login_details
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred.',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendEmail($to, $subject, $message, $login_details)
+    {
+        try {
+            $tenant_id = config('services.azure_mail.tenant_id');
+            $client_id = config('services.azure_mail.client_id');
+            $client_secret = config('services.azure_mail.client_secret');
+
+            if (!$tenant_id || !$client_id || !$client_secret) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mail service credentials are not configured.',
+                ], 500);
+            }
+
+            $token_url = "https://login.microsoftonline.com/{$tenant_id}/oauth2/v2.0/token";
+            $grant_type = 'client_credentials';
+            $scope = 'https://graph.microsoft.com/.default';
+            
+            $token_response = Http::asForm()->post($token_url, [
+                'client_id' => $client_id,
+                'client_secret' => $client_secret,
+                'grant_type' => $grant_type,
+                'scope' => $scope
+            ]);
+
+            if (!$token_response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to obtain access token.',
+                    'error' => $token_response->json()
+                ], 500);
+            }
+
+            $access_token = $token_response->json()['access_token'];
+            $sender_email = config('services.azure_mail.sender');
+            $send_mail_url = "https://graph.microsoft.com/v1.0/users/{$sender_email}/sendMail";
+
+            $recipients = is_array($to) ? $to : [$to];
+            $toRecipients = array_map(function($email) {
+                return [
+                    'emailAddress' => [
+                        'address' => $email
+                    ]
+                ];
+            }, $recipients);
+
+            $mail_data = [
+                'message' => [
+                    'subject' => $subject,
+                    'body' => [
+                        'contentType' => 'Text',
+                        'content' => $message
+                    ],
+                    'toRecipients' => $toRecipients
+                ]
+            ];
+
+            $send_response = Http::withToken($access_token)
+                ->post($send_mail_url, $mail_data);
+
+            if (!$send_response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send email.',
+                    'error' => $send_response->json()
+                ], 500);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Email sent successfully.',
